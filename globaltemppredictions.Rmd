@@ -1,0 +1,75 @@
+---
+title: "Global temperature predictions accuracy"
+author: "Gonçalo Nogueira"
+date: "September 17, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(plotly)
+```
+
+## IPCC assesment reports
+
+The Intergovernmental Panel on Climate Change (IPCC) produces assessments reports on the current
+state of the climate change. The first assessment report was produced in 1990 and contained a
+prediction of the global temperature change.
+
+We will see how the predictions match up with reality based on data on measured global temperature
+provided by NASA.
+
+## Predictions of the 1st Assessment Report
+
+The IPCC predicted a rise of temperatures of 0.7 to 1.5 ºC from 1990 to 2030.
+So the various scenarios are modeled by the following linear relationships:
+
+$$T_i = T_{1990} + b(i - 1990)$$
+
+$T_i$ - predicted global temperature in year $i$
+
+$T_{1990}$ - observed global temperature in 1990
+
+$b$ - temperature change by year; depends on the scenario being considered
+
+## Scenarios being evaluated
+
+**Low scenario** - 0.7 ºC increase in 2030 (0.0175 ºC per year)
+
+**Intermediate scenario** - 1.1 ºC increase in 2030 (0.0275 ºC per year)
+
+**High scenario** - 1.5 ºC increase in 2030 (0.0375 ºC per year)
+
+## Visualization of the predictions
+
+```{r}
+temp <- read.table("nasa-global-temp.txt", header = FALSE,
+                   col.names = c("year", "temperature", "temperature.5.year.mean"))
+
+temp$low.scenario <- rep(NA, nrow(temp))
+temp$intermediate.scenario <- rep(NA, nrow(temp))
+temp$low.scenario <- rep(NA, nrow(temp))
+
+temp.prediction <- function(year, b) {
+  temp[temp$year == 1990, "temperature"] + b * (year - 1990)
+}
+
+temp[temp$year >= 1990, "low.scenario"] <- sapply(temp[temp$year >= 1990, "year"],
+                                                  temp.prediction, 0.0175)
+
+temp[temp$year >= 1990, "intermediate.scenario"] <- sapply(temp[temp$year >= 1990, "year"],
+                                                      temp.prediction, 0.0275)
+
+temp[temp$year >= 1990, "high.scenario"] <- sapply(temp[temp$year >= 1990, "year"],
+                                                      temp.prediction, 0.0375)
+
+plot_ly(temp, x = ~year, y = ~temperature, name = "Measured global temperature",
+        type = "scatter", mode = "lines") %>%
+  add_trace(y = ~low.scenario, name = "Low scenario", mode = "lines") %>%
+  add_trace(y = ~intermediate.scenario, name = "Intermediate scenario", mode = "lines") %>%
+  add_trace(y = ~high.scenario, name = "High scenario", mode = "lines") %>%
+  layout(title = "IPCC 1st AR predictions VS measured global temperature",
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "Relative temperature (ºC)"),
+         hovermode = "closest")
+```
